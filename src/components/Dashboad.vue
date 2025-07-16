@@ -123,11 +123,9 @@ async function openChart(type: TypeOfChart) {
 
 .tab-items {
   width: 80%;
-  margin-top: 100px;
+  margin-top: 10px;
 }
-.chartByHours {
-  height: 390px;
-}
+/* .chartByHours height removed */
 .chart-btn {
   background-color: rgb(192, 192, 192);
   color: #fff;

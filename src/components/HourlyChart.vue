@@ -1,11 +1,12 @@
 <template>
-  <p class="description">{{ t('timeChartDescription.message') }}</p>
-  <Bar :data="data" :options="options" v-if="isLoaded" />
+  <!-- Elements are not rendered at all -->
+  <!-- <p class="description">{{ t('timeChartDescription.message') }}</p> -->
+  <!-- <Bar :data="data" :options="options" v-if="isLoaded" /> -->
 </template>
 
 <script lang="ts">
 export default {
-  name: 'HourlyChart',
+  name: 'HourlyChart'
 };
 </script>
 
