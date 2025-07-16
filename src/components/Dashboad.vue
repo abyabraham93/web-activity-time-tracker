@@ -38,8 +38,11 @@
     <NotesView v-if="chart == TypeOfChart.Notes" />
     <BlankView v-if="chart == TypeOfChart.Blank" />
   </div>
-  <div class="tab-items">
-    <TabList :type="TypeOfList.Dashboard" :showAllStats="false" v-if="chart == TypeOfChart.Horly" />
+  <div v-if="chart == TypeOfChart.Horly">
+    <TopSitesPieChart />
+    <div class="tab-items">
+      <TabList :type="TypeOfList.Dashboard" :showAllStats="false" />
+    </div>
   </div>
 </template>
 
@@ -56,6 +59,7 @@ import HourlyChart from './HourlyChart.vue';
 import NotesView from './NotesView.vue';
 import BlankView from './BlankView.vue';
 import TabList from '../components/TabList.vue';
+import TopSitesPieChart from './TopSitesPieChart.vue';
 import { TypeOfList } from '../utils/enums';
 import { onMounted, ref } from 'vue';
 import Browser from 'webextension-polyfill';
