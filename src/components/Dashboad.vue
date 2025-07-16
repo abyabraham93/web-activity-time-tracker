@@ -61,11 +61,12 @@ import BlankView from './BlankView.vue';
 import TabList from '../components/TabList.vue';
 import TopSitesPieChart from './TopSitesPieChart.vue';
 import { TypeOfList } from '../utils/enums';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, onUnmounted, watch } from 'vue';
 import Browser from 'webextension-polyfill';
 
 const { t } = useI18n();
 const chart = ref<TypeOfChart>();
+const refreshTimer = ref<number | null>(null);
 
 enum TypeOfChart {
   Horly,
@@ -90,15 +91,59 @@ onMounted(async () => {
       // Default to hourly view
       chart.value = TypeOfChart.Horly;
     }
+    
+    // Start refresh timer if hourly view is active
+    if (chart.value === TypeOfChart.Horly) {
+      startRefreshTimer();
+    }
   } catch (error) {
     console.error('Error loading chart preference:', error);
     // Default to hourly view if error
     chart.value = TypeOfChart.Horly;
+    startRefreshTimer();
   }
 });
 
+// Clean up timer when component is unmounted
+onUnmounted(() => {
+  stopRefreshTimer();
+});
+
+// Create a simple event bus for component communication
+const refreshEvent = new CustomEvent('refresh-data');
+
+// Function to emit the refresh event to child components
+function emitRefreshEvent() {
+  window.dispatchEvent(refreshEvent);
+}
+
+// Start the refresh timer for hourly view
+function startRefreshTimer() {
+  if (refreshTimer.value === null) {
+    // Set timer to refresh every 30 seconds (30000 ms)
+    refreshTimer.value = window.setInterval(() => {
+      emitRefreshEvent();
+    }, 30000);
+  }
+}
+
+// Stop the refresh timer
+function stopRefreshTimer() {
+  if (refreshTimer.value !== null) {
+    window.clearInterval(refreshTimer.value);
+    refreshTimer.value = null;
+  }
+}
+
 async function openChart(type: TypeOfChart) {
   chart.value = type;
+  
+  // Start or stop refresh timer based on chart type
+  if (type === TypeOfChart.Horly) {
+    startRefreshTimer();
+  } else {
+    stopRefreshTimer();
+  }
   
   // Save preference to storage
   try {

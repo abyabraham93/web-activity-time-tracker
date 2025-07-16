@@ -30,7 +30,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { convertSummaryTimeToString } from '../utils/converter';
 import { injectStorage } from '../storage/inject-storage';
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { DARK_MODE_DEFAULT, StorageParams } from '../storage/storage-params';
 import { useTodayTabListSummary } from '../functions/useTodayTabListSummary';
 import { SortingBy } from '../utils/enums';
@@ -132,10 +132,23 @@ function setupChartData(labels: string[], timeValues: number[]) {
   };
 }
 
+// Handler for refresh events
+function handleRefresh() {
+  processTabsData();
+}
+
 onMounted(async () => {
   darkMode.value = await settingsStorage.getValue(StorageParams.DARK_MODE, DARK_MODE_DEFAULT);
   ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
   await processTabsData();
+  
+  // Listen for refresh events from parent component
+  window.addEventListener('refresh-data', handleRefresh);
+});
+
+// Clean up event listener when component is unmounted
+onUnmounted(() => {
+  window.removeEventListener('refresh-data', handleRefresh);
 });
 </script>
 

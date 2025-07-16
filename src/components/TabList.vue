@@ -44,7 +44,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import TabItem from '../components/TabItem.vue';
 import TabItemHeader from '../components/TabItemHeader.vue';
@@ -144,9 +144,23 @@ function getItem(tab: Tab): CurrentTabItem {
   };
 }
 
+// Handler for refresh events
+function handleRefresh() {
+  if (props.type === TypeOfList.Today || props.type === TypeOfList.Dashboard) {
+    loadList(SortingBy.UsageTime);
+  }
+}
+
 onMounted(async () => {
   isLoading.value = true;
   await loadList(SortingBy.UsageTime);
+  
+  // Listen for refresh events from parent component
+  window.addEventListener('refresh-data', handleRefresh);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('refresh-data', handleRefresh);
 });
 </script>
 

@@ -21,7 +21,7 @@ import {
   LinearScale,
   CategoryScale,
 } from 'chart.js';
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { injectStorage } from '../storage/inject-storage';
 import { StorageDeserializeParam } from '../storage/storage-params';
 import { TimeInterval } from '../entity/time-interval';
@@ -210,5 +210,19 @@ async function buildChart() {
   isLoaded.value = true;
 }
 
-onMounted(async () => await buildChart());
+// Handler for refresh events
+function handleRefresh() {
+  buildChart();
+}
+
+onMounted(async () => {
+  await buildChart();
+  
+  // Listen for refresh events from parent component
+  window.addEventListener('refresh-data', handleRefresh);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('refresh-data', handleRefresh);
+});
 </script>
