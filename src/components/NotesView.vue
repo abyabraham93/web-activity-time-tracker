@@ -1,12 +1,15 @@
 <template>
   <div class="notes-container">
-    <h3>{{ t('notes_title') }}</h3>
+    <h3>Quick Notes</h3>
     <textarea 
       v-model="notes" 
       class="notes-textarea" 
-      :placeholder="t('notes_placeholder')"
+      placeholder="Write your notes here..."
       @input="saveNotes"
     ></textarea>
+    <div class="notes-actions">
+      <button class="clear-button" @click="clearNotes">Clear Notes</button>
+    </div>
   </div>
 </template>
 
@@ -47,11 +50,23 @@ async function saveNotes() {
     console.error('Error saving notes:', error);
   }
 }
+
+// Clear notes
+async function clearNotes() {
+  notes.value = '';
+  try {
+    await Browser.storage.local.set({ [NOTES_STORAGE_KEY]: '' });
+  } catch (error) {
+    console.error('Error clearing notes:', error);
+  }
+}
 </script>
 
 <style scoped>
 .notes-container {
   width: 100%;
+  max-width: 800px;
+  margin: 0;
   padding: 10px;
 }
 
@@ -69,5 +84,26 @@ async function saveNotes() {
 h3 {
   margin-top: 0;
   margin-bottom: 10px;
+}
+
+.notes-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clear-button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clear-button:hover {
+  background-color: #c0392b;
 }
 </style>
