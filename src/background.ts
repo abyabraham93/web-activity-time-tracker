@@ -11,7 +11,22 @@ import { Messages } from './utils/messages';
 import { injectTabsRepositorySingleton } from './repository/inject-tabs-repository';
 
 logger.log('Start background script');
-let pomodoroTimer: number;
+// Using NodeJS.Timeout type for compatibility with setInterval
+let pomodoroTimer: ReturnType<typeof setInterval>;
+
+// Handle new tab creation to show dashboard but keep URL bar empty
+Browser.tabs.onCreated.addListener(async (tab) => {
+  // Check if this is a new tab page
+  if (tab.pendingUrl === 'chrome://newtab/' || tab.url === 'chrome://newtab/') {
+    // Get the dashboard URL
+    const dashboardUrl = Browser.runtime.getURL('src/dashboard.html') + '?tab=dashboard';
+    
+    // Update the tab to load our dashboard
+    await Browser.tabs.update(tab.id, {
+      url: dashboardUrl
+    });
+  }
+});
 
 self.onerror = err => {
   console.error('Unhandled error:', err);
@@ -76,7 +91,7 @@ pomodoro();
 scheduleJobs();
 initTracker();
 
-Browser.runtime.onMessage.addListener(async message => {
+Browser.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message == Messages.ClearAllData) {
     const storage = injectStorage();
     const repo = await injectTabsRepositorySingleton();
@@ -88,5 +103,14 @@ Browser.runtime.onMessage.addListener(async message => {
     await storage.saveTabs(message.data);
     const repo = await injectTabsRepositorySingleton();
     repo.initAsync();
+  }
+  if (message.action === 'getDashboardUrl') {
+    // Handle the dashboard URL request from newtab.html
+    const dashboardUrl = Browser.runtime.getURL('src/dashboard.html') + '?tab=dashboard';
+    // If the sender has a tab, navigate it directly
+    if (sender.tab && sender.tab.id) {
+      Browser.tabs.update(sender.tab.id, { url: dashboardUrl });
+    }
+    return true; // Keep the message channel open for async response
   }
 });

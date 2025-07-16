@@ -359,6 +359,18 @@
   "intervals": {
     "message": "Intervals"
   },
+  "notes": {
+    "message": "Notes"
+  },
+  "notes_title": {
+    "message": "Quick Notes"
+  },
+  "notes_placeholder": {
+    "message": "Write your notes here..."
+  },
+  "blank": {
+    "message": "Blank"
+  },
   "intervalsChart": {
     "message": "Only time intervals greater than",
     "description": "are shown"

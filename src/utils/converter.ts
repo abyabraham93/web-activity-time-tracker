@@ -32,13 +32,21 @@ export function convertMilliSecondsToHHMM(seconds: number): Time {
 }
 
 export function convertSummaryTimeToBadgeString(summaryTime: number): string {
-  const sec = summaryTime;
-  const min = Number((summaryTime / 60).toFixed(0));
-  const hours = Number((summaryTime / (60 * 60)).toFixed(1));
+  const totalSeconds = summaryTime;
+  const hours = totalSeconds / 3600; // Calculate hours as decimal
+  const seconds = totalSeconds % 60; // Get just the seconds part
 
-  if (sec < 60) return `${sec}s`;
-  else if (min < 60) return `${min}m`;
-  else return `${hours}h`;
+  if (hours >= 1) {
+    // For times with hours, show as decimal hours (2 places) + seconds
+    return `${hours.toFixed(2)}h${seconds}s`;
+  } else if (totalSeconds >= 60) {
+    // For times with minutes but less than an hour, show as minutes + seconds
+    const minutes = Math.floor(totalSeconds / 60);
+    return `${minutes}m${seconds}s`;
+  } else {
+    // For times less than a minute, just show seconds
+    return `${seconds}s`;
+  }
 }
 
 export function convertSummaryTimeToString(summaryTime: number) {
