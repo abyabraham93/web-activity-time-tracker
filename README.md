@@ -9,17 +9,6 @@ This extension tracks your web time and shows you the cold, hard truth about you
 
 Your data stays on YOUR device. We use local [chrome.storage API](https://developer.chrome.com/apps/storage) only - no cloud uploads, no tracking, no judgment (well, maybe a little).
 
-![image](https://user-images.githubusercontent.com/23387046/206865140-875bf7ab-a59e-42e3-bb9e-e348e8b85749.png) ![image](https://user-images.githubusercontent.com/23387046/206865174-aa409efe-495d-450e-a8ea-1d97024c9e23.png)
-
-You can see your daily stats.
-
-![image](https://github.com/Stigmatoz/web-activity-time-tracker/assets/23387046/d67c812c-2ba4-4ef8-a685-ab5fd77c7fbe)
-
-
-And you can see your overall stats.
-
-![image](https://github.com/Stigmatoz/web-activity-time-tracker/assets/23387046/6ea4547e-8bc6-4df7-ba0c-b5b330117270)
-
 
 ## ✨ New Features in This Fork
 

@@ -8,9 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
 artifacts
 *.local
+# dist folder is included for easy installation
 
 # Editor directories and files
 .vscode/*
