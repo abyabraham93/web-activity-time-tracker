@@ -10,7 +10,7 @@
           <div class="site-color" :style="{ backgroundColor: chartColors[index] }"></div>
           <div class="site-info">
             <div class="site-url">{{ site.url }}</div>
-            <div class="site-time">{{ convertSummaryTimeToString(site.summaryTime) }}</div>
+            <div class="site-time">{{ convertSummaryTimeToString(getTodaySummaryTime(site)) }}</div>
           </div>
         </div>
       </div>
@@ -35,6 +35,7 @@ import { DARK_MODE_DEFAULT, StorageParams } from '../storage/storage-params';
 import { useTodayTabListSummary } from '../functions/useTodayTabListSummary';
 import { SortingBy } from '../utils/enums';
 import { Tab } from '../entity/tab';
+import { todayLocalDate } from '../utils/date';
 
 const settingsStorage = injectStorage();
 const darkMode = ref(false);
@@ -51,11 +52,11 @@ const chartColors = [
   '#e256ae',
 ];
 
-// Process tabs to get top 4 sites and combine the rest as "Others"
+// Process tabs to get top 4 sites for the pie chart using TODAY's data
 async function processTabsData() {
   isLoading.value = true;
   
-  // Get today's tab list summary
+  // Get today's tab list summary - same data source as used in TabList.vue
   const tabSummary = await useTodayTabListSummary(SortingBy.UsageTime);
   
   if (!tabSummary || !tabSummary.tabs || tabSummary.tabs.length === 0) {
@@ -63,17 +64,21 @@ async function processTabsData() {
     return;
   }
   
+  // Get the tabs data
   const tabs = tabSummary.tabs;
-  const summaryTime = tabSummary.summaryTime || 0;
   
   // Extract top 4 sites
   const top4Sites = tabs.slice(0, 4);
   
-  // Prepare data for chart - only top 4 sites
+  // Get TODAY's data for each site - this is what's shown in the table
   const labels = top4Sites.map(tab => tab.url);
-  const timeValues = top4Sites.map(tab => tab.summaryTime);
+  const timeValues = top4Sites.map(tab => {
+    // Get today's summary time for this tab - exactly as shown in the table
+    const todayData = tab.days.find(day => day.date === todayLocalDate());
+    return todayData ? todayData.summary : 0;
+  });
   
-  // Save top sites for the list
+  // Save top sites for the list - keep the original Tab objects
   topSites.value = top4Sites;
   
   // Set chart data
@@ -130,6 +135,12 @@ function setupChartData(labels: string[], timeValues: number[]) {
       },
     },
   };
+}
+
+// Get today's summary time for a tab
+function getTodaySummaryTime(tab: Tab): number {
+  const todayData = tab.days.find(day => day.date === todayLocalDate());
+  return todayData ? todayData.summary : 0;
 }
 
 // Handler for refresh events
