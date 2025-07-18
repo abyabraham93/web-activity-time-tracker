@@ -30,12 +30,21 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { convertSummaryTimeToString } from '../utils/converter';
 import { injectStorage } from '../storage/inject-storage';
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch, PropType } from 'vue';
 import { DARK_MODE_DEFAULT, StorageParams } from '../storage/storage-params';
 import { useTodayTabListSummary } from '../functions/useTodayTabListSummary';
 import { SortingBy } from '../utils/enums';
 import { Tab } from '../entity/tab';
 import { todayLocalDate } from '../utils/date';
+import { TabListSummary } from '../dto/tabListSummary';
+
+// Define props
+const props = defineProps({
+  tabListData: {
+    type: Object as PropType<TabListSummary | null>,
+    default: null
+  }
+});
 
 const settingsStorage = injectStorage();
 const darkMode = ref(false);
@@ -56,8 +65,8 @@ const chartColors = [
 async function processTabsData() {
   isLoading.value = true;
   
-  // Get today's tab list summary - same data source as used in TabList.vue
-  const tabSummary = await useTodayTabListSummary(SortingBy.UsageTime);
+  // Use the shared data from Dashboard if available, otherwise fetch it
+  const tabSummary = props.tabListData || await useTodayTabListSummary(SortingBy.UsageTime);
   
   if (!tabSummary || !tabSummary.tabs || tabSummary.tabs.length === 0) {
     isLoading.value = false;
@@ -147,6 +156,13 @@ function getTodaySummaryTime(tab: Tab): number {
 function handleRefresh() {
   processTabsData();
 }
+
+// Watch for changes in the tabListData prop
+watch(() => props.tabListData, (newData) => {
+  if (newData) {
+    processTabsData();
+  }
+}, { deep: true });
 
 onMounted(async () => {
   darkMode.value = await settingsStorage.getValue(StorageParams.DARK_MODE, DARK_MODE_DEFAULT);

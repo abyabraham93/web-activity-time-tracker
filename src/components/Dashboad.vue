@@ -30,7 +30,7 @@
         @click="openChart(TypeOfChart.Blank)"
       >
         <span class="ml-5 blank-icon">🔒</span>
-        {{ t('blank') }}
+        {{ t('Blank') }}
       </button>
     </div>
     <HourlyChart v-if="chart == TypeOfChart.Horly" />
@@ -39,10 +39,13 @@
     <BlankView v-if="chart == TypeOfChart.Blank" />
   </div>
   <div v-if="chart == TypeOfChart.Horly">
-    <TopSitesPieChart />
-    <div class="tab-items">
-      <TabList :type="TypeOfList.Dashboard" :showAllStats="false" />
-    </div>
+    <div v-if="isLoadingData" class="loading-indicator">Loading...</div>
+    <template v-else>
+      <TopSitesPieChart :tabListData="dashboardData" />
+      <div class="tab-items">
+        <TabList :type="TypeOfList.Dashboard" :showAllStats="false" :tabListData="dashboardData" />
+      </div>
+    </template>
   </div>
 </template>
 
@@ -60,13 +63,20 @@ import NotesView from './NotesView.vue';
 import BlankView from './BlankView.vue';
 import TabList from '../components/TabList.vue';
 import TopSitesPieChart from './TopSitesPieChart.vue';
-import { TypeOfList } from '../utils/enums';
+import { TypeOfList, SortingBy } from '../utils/enums';
 import { onMounted, ref, onUnmounted, watch } from 'vue';
 import Browser from 'webextension-polyfill';
+import { useTodayTabListSummary } from '../functions/useTodayTabListSummary';
+import { TabListSummary } from '../dto/tabListSummary';
+import { Tab } from '../entity/tab';
 
 const { t } = useI18n();
 const chart = ref<TypeOfChart>();
 const refreshTimer = ref<number | null>(null);
+
+// Shared data state for dashboard components
+const dashboardData = ref<TabListSummary | null>(null);
+const isLoadingData = ref<boolean>(true);
 
 enum TypeOfChart {
   Horly,
@@ -79,28 +89,23 @@ enum TypeOfChart {
 const CHART_PREFERENCE_KEY = 'dashboard_chart_preference';
 
 onMounted(async () => {
-  // Get saved preference from storage
   try {
-    const result = await Browser.storage.local.get(CHART_PREFERENCE_KEY);
-    const savedPreference = result[CHART_PREFERENCE_KEY];
-    
-    // If we have a saved preference, use it
-    if (savedPreference !== undefined) {
-      chart.value = savedPreference;
+    const result = await Browser.storage.local.get([CHART_PREFERENCE_KEY]);
+    if (result[CHART_PREFERENCE_KEY] !== undefined) {
+      chart.value = result[CHART_PREFERENCE_KEY];
     } else {
-      // Default to hourly view
       chart.value = TypeOfChart.Horly;
     }
     
-    // Start refresh timer if hourly view is active
+    // Load dashboard data on mount
+    await loadDashboardData();
+    
     if (chart.value === TypeOfChart.Horly) {
       startRefreshTimer();
     }
   } catch (error) {
     console.error('Error loading chart preference:', error);
-    // Default to hourly view if error
     chart.value = TypeOfChart.Horly;
-    startRefreshTimer();
   }
 });
 
@@ -112,8 +117,23 @@ onUnmounted(() => {
 // Create a simple event bus for component communication
 const refreshEvent = new CustomEvent('refresh-data');
 
-// Function to emit the refresh event to child components
-function emitRefreshEvent() {
+// Function to load dashboard data
+async function loadDashboardData() {
+  isLoadingData.value = true;
+  try {
+    // Load data using the same function that TabList and TopSitesPieChart use
+    const data = await useTodayTabListSummary(SortingBy.UsageTime);
+    dashboardData.value = data;
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+  } finally {
+    isLoadingData.value = false;
+  }
+}
+
+// Function to emit the refresh event to child components and reload data
+async function emitRefreshEvent() {
+  await loadDashboardData();
   window.dispatchEvent(refreshEvent);
 }
 
@@ -177,7 +197,7 @@ async function openChart(type: TypeOfChart) {
 /* .chartByHours height removed */
 .chart-btn {
   background-color: rgb(192, 192, 192);
-  color: #fff;
+  color: #000;
   border-radius: 7px;
   height: 36px;
   line-height: 35px;
@@ -193,6 +213,12 @@ async function openChart(type: TypeOfChart) {
 
 .chart-btn.active {
   background-color: #5377af !important;
-  color: white;
+  color: #000;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
 }
 </style>

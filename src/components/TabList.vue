@@ -44,7 +44,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, PropType, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import TabItem from '../components/TabItem.vue';
 import TabItemHeader from '../components/TabItemHeader.vue';
@@ -52,18 +52,29 @@ import DonutChart from '../components/DonutChart.vue';
 import OverallStatistics from '../components/OverallStatistics.vue';
 import { Tab } from '../entity/tab';
 import { SortingBy, TypeOfList } from '../utils/enums';
+import { CurrentTabItem } from '../dto/currentTabItem';
 import { useTodayTabListSummary } from '../functions/useTodayTabListSummary';
 import { useAllTabListSummary } from '../functions/useAllTabListSummary';
-import { CurrentTabItem } from '../dto/currentTabItem';
 import { todayLocalDate } from '../utils/date';
 import { OverallStats } from '../dto/tabListSummary';
+import { TabListSummary } from '../dto/tabListSummary';
 
 const { t } = useI18n();
 
-const props = defineProps<{
-  type: TypeOfList;
-  showAllStats: boolean;
-}>();
+const props = defineProps({
+  type: {
+    type: Number as PropType<TypeOfList>,
+    required: true,
+  },
+  showAllStats: {
+    type: Boolean,
+    default: true,
+  },
+  tabListData: {
+    type: Object as PropType<TabListSummary | null>,
+    default: null
+  }
+});
 
 const isShowOverallStats = computed(() => props.showAllStats && props.type == TypeOfList.All);
 
@@ -90,25 +101,38 @@ function showAllWebSites() {
 
 async function loadList(sortingBy: SortingBy) {
   let tabSummary = null;
-  if (props.type == TypeOfList.Today || props.type == TypeOfList.Dashboard)
-    tabSummary = await useTodayTabListSummary(sortingBy);
-  if (props.type == TypeOfList.All) {
-    tabSummary = await useAllTabListSummary(sortingBy);
-
-    if (tabSummary != null) {
-      firstDay.value = tabSummary.firstDay;
-      countOfActiveDays.value = tabSummary.activeDaysTotal;
-      dataForOvarallStats.value = tabSummary;
+  
+  // Use shared data from Dashboard if available
+  if (props.tabListData && (props.type == TypeOfList.Today || props.type == TypeOfList.Dashboard)) {
+    tabSummary = props.tabListData;
+  } else {
+    // Otherwise fetch data as before
+    if (props.type == TypeOfList.Today || props.type == TypeOfList.Dashboard)
+      tabSummary = await useTodayTabListSummary(sortingBy);
+    if (props.type == TypeOfList.All) {
+      tabSummary = await useAllTabListSummary(sortingBy);
     }
   }
-
+  
   if (tabSummary != null) {
+    // Process All type specific data
+    if (props.type == TypeOfList.All && tabSummary.firstDay) {
+      firstDay.value = tabSummary.firstDay;
+      countOfActiveDays.value = tabSummary.activeDaysTotal || 0;
+      dataForOvarallStats.value = tabSummary;
+    }
+    
+    // Process common data
     loadedTabs = tabSummary.tabs;
     tabs.value = tabSummary.tabs;
-    summaryTime.value = tabSummary.summaryTime;
-    timeForChart.value = tabSummary.chart.timeForChart;
-    sitesForChart.value = tabSummary.chart.sitesForChart;
+    summaryTime.value = tabSummary.summaryTime || 0;
+    
+    if (tabSummary.chart) {
+      timeForChart.value = tabSummary.chart.timeForChart || [];
+      sitesForChart.value = tabSummary.chart.sitesForChart || [];
+    }
 
+    // Handle pagination for All type
     if (props.type == TypeOfList.All && loadedTabs.length > 100) {
       showOnlyFirst100Items.value = true;
       tabs.value = tabSummary.tabs.slice(0, 100);
@@ -150,6 +174,13 @@ function handleRefresh() {
     loadList(SortingBy.UsageTime);
   }
 }
+
+// Watch for changes in the tabListData prop
+watch(() => props.tabListData, (newData) => {
+  if (newData && (props.type == TypeOfList.Today || props.type == TypeOfList.Dashboard)) {
+    loadList(SortingBy.UsageTime);
+  }
+}, { deep: true });
 
 onMounted(async () => {
   isLoading.value = true;
